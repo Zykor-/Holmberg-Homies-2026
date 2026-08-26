@@ -1,0 +1,20 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "holmberg-homies-2026",
+  "main": "./dist/server/index.js",
+  "compatibility_date": "2026-08-25",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "vars": {
+    "AIRTABLE_BASE_ID": "appvpjuRNIdjXagB0",
+    "AIRTABLE_PLAYERS_TABLE_ID": "tblefvH7wtYbgPIU0",
+    "AIRTABLE_VOTES_TABLE_ID": "tblQKbLXzQyle5qFh",
+    "AIRTABLE_MATCHES_TABLE_ID": "tblfZs2qudo25ngxE",
+    "AIRTABLE_SHOW_VOTE_TOTALS": "false"
+  },
+  "assets": {
+    "directory": "./dist/client",
+    "binding": "ASSETS",
+    "not_found_handling": "none"
+  }
+}

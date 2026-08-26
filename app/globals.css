@@ -1,0 +1,143 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "../vendor/shadcn-tailwind-4.13.0.css";
+
+@utility scrollbar-thin {
+  scrollbar-width: thin;
+}
+
+:root {
+  --court-blue: #087bc1;
+  --court-blue-dark: #00558f;
+  --deep-navy: #052a47;
+  --pine: #0f5a49;
+  --pickle: #d9ff3f;
+  --coral: #ff765d;
+  --cream: #fff9e9;
+  --background: #f4f7f2;
+  --foreground: #082a42;
+  --card: #ffffff;
+  --card-foreground: #082a42;
+  --popover: #ffffff;
+  --popover-foreground: #082a42;
+  --primary: #087bc1;
+  --primary-foreground: #ffffff;
+  --secondary: #e9f4f8;
+  --secondary-foreground: #082a42;
+  --muted: #edf1ed;
+  --muted-foreground: #597080;
+  --accent: #d9ff3f;
+  --accent-foreground: #082a42;
+  --destructive: #c83c39;
+  --border: #cddde3;
+  --input: #bfd3dc;
+  --ring: #087bc1;
+  --radius: 0.9rem;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --font-sans: "Trebuchet MS", Arial, sans-serif;
+}
+
+* {
+  border-color: var(--border);
+}
+
+html {
+  scroll-behavior: smooth;
+  background: var(--background);
+}
+
+body {
+  margin: 0;
+  background:
+    linear-gradient(90deg, rgba(8, 123, 193, 0.035) 1px, transparent 1px),
+    linear-gradient(rgba(8, 123, 193, 0.035) 1px, transparent 1px),
+    var(--background);
+  background-size: 34px 34px;
+  color: var(--foreground);
+  font-family: "Trebuchet MS", Arial, sans-serif;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: var(--pickle);
+  color: var(--deep-navy);
+}
+
+.display-face {
+  font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
+  font-weight: 900;
+  letter-spacing: -0.035em;
+  text-transform: uppercase;
+}
+
+.hero-scrim {
+  background:
+    linear-gradient(90deg, rgba(3, 35, 61, 0.96) 0%, rgba(3, 35, 61, 0.82) 34%, rgba(3, 35, 61, 0.2) 70%, rgba(3, 35, 61, 0.05) 100%),
+    linear-gradient(0deg, rgba(3, 35, 61, 0.54) 0%, transparent 42%);
+}
+
+.paper-grain {
+  background-image: radial-gradient(rgba(8, 42, 66, 0.08) 0.7px, transparent 0.7px);
+  background-size: 7px 7px;
+}
+
+.court-rule {
+  position: relative;
+}
+
+.court-rule::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: -0.85rem;
+  left: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--pickle) 0 34%, var(--court-blue) 34% 82%, var(--coral) 82% 100%);
+}
+
+@media (max-width: 767px) {
+  .hero-scrim {
+    background:
+      linear-gradient(90deg, rgba(3, 35, 61, 0.93) 0%, rgba(3, 35, 61, 0.76) 66%, rgba(3, 35, 61, 0.45) 100%),
+      linear-gradient(0deg, rgba(3, 35, 61, 0.7) 0%, transparent 50%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
