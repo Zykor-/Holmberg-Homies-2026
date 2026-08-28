@@ -1,6 +1,6 @@
 # Holmberg Homies 2026
 
-A mobile-friendly friends pickleball tournament site for Holmberg Park in Spokane. It supports player registration, one partner-format vote per registered player, public player lists, Airtable-driven round-robin standings, and Airtable-driven finals pairings.
+A mobile-friendly friends pickleball tournament and potluck site for Holmberg Park in Spokane. It supports player registration, one partner-format vote per registered player, a shared potluck list, Airtable-driven round-robin standings, and Airtable-driven finals pairings.
 
 ## Stack
 
@@ -21,6 +21,7 @@ The app expects these tables and exact field names:
 | Players | Player ID, Name, Contact, Registration Date, Active |
 | Votes | Vote ID, Player, Partner Format Vote, Vote Date |
 | Matches | Match ID, Round, Team 1, Team 2, Team 1 Score, Team 2 Score, Completed, Match Type |
+| Potluck | Contribution ID, Player, Item, Updated At |
 
 `Partner Format Vote` accepts `Random Partners` or `Choose Your Partners`. `Match Type` accepts `Round Robin` or `Finals`.
 
@@ -36,6 +37,7 @@ AIRTABLE_BASE_ID=appvpjuRNIdjXagB0
 AIRTABLE_PLAYERS_TABLE_ID=tblefvH7wtYbgPIU0
 AIRTABLE_VOTES_TABLE_ID=tblQKbLXzQyle5qFh
 AIRTABLE_MATCHES_TABLE_ID=tblfZs2qudo25ngxE
+AIRTABLE_POTLUCK_TABLE_ID=tblkPVM8axmyPszi1
 AIRTABLE_SHOW_VOTE_TOTALS=false
 ```
 

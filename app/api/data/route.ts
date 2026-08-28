@@ -2,6 +2,7 @@ import {
   isAirtableConfigured,
   listMatches,
   listPlayers,
+  listPotluck,
   listVotes,
   shouldShowVoteTotals,
 } from "@/lib/airtable";
@@ -30,17 +31,20 @@ export async function GET() {
         voteTotals: null,
         standings: [],
         finals: [],
+        potluck: [],
       },
       { headers: noStoreHeaders },
     );
   }
 
   try {
-    const [playerRecords, voteRecords, matchRecords] = await Promise.all([
-      listPlayers(),
-      listVotes(),
-      listMatches(),
-    ]);
+    const [playerRecords, voteRecords, matchRecords, potluckRecords] =
+      await Promise.all([
+        listPlayers(),
+        listVotes(),
+        listMatches(),
+        listPotluck(),
+      ]);
 
     const players = playerRecords
       .filter(
@@ -151,6 +155,25 @@ export async function GET() {
       .filter((match) => match.team1 || match.team2);
 
     const showVoteTotals = shouldShowVoteTotals();
+    const playerNames = new Map(
+      players.map((player) => [player.id, player.name]),
+    );
+    const potluck = potluckRecords
+      .filter(({ fields }) => fields.Player && fields.Item)
+      .flatMap(({ id, fields }) => {
+        const playerId = fields.Player as string;
+        const playerName = playerNames.get(playerId);
+        if (!playerName) return [];
+        return [
+          {
+            id: fields["Contribution ID"] ?? id,
+            playerId,
+            playerName,
+            item: fields.Item as string,
+          },
+        ];
+      })
+      .sort((a, b) => a.playerName.localeCompare(b.playerName));
 
     return Response.json(
       {
@@ -160,6 +183,7 @@ export async function GET() {
         voteTotals: showVoteTotals ? voteTotals : null,
         standings,
         finals,
+        potluck,
       },
       { headers: noStoreHeaders },
     );

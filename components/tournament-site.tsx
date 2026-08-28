@@ -11,6 +11,7 @@ import {
   Megaphone,
   RefreshCw,
   Trophy,
+  UtensilsCrossed,
   Users,
   Vote,
 } from "lucide-react";
@@ -59,6 +60,12 @@ type FinalsMatch = {
   team2Score: number | null;
   completed: boolean;
 };
+type PotluckContribution = {
+  id: string;
+  playerId: string;
+  playerName: string;
+  item: string;
+};
 type SiteData = {
   configured: boolean;
   players: Player[];
@@ -66,6 +73,7 @@ type SiteData = {
   voteTotals: VoteTotals | null;
   standings: Standing[];
   finals: FinalsMatch[];
+  potluck: PotluckContribution[];
 };
 
 const emptyData: SiteData = {
@@ -75,6 +83,7 @@ const emptyData: SiteData = {
   voteTotals: null,
   standings: [],
   finals: [],
+  potluck: [],
 };
 
 function SectionHeading({
@@ -142,6 +151,12 @@ export function TournamentSite() {
     message: string;
   } | null>(null);
   const [votePending, setVotePending] = useState(false);
+  const [potluckItem, setPotluckItem] = useState("");
+  const [potluckStatus, setPotluckStatus] = useState<{
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
+  const [potluckPending, setPotluckPending] = useState(false);
 
   const refreshData = useCallback(async () => {
     setDataError("");
@@ -166,6 +181,8 @@ export function TournamentSite() {
   }, []);
 
   useEffect(() => {
+    // Initial remote data load; refreshData owns the async state transition.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void refreshData();
   }, [refreshData]);
 
@@ -178,6 +195,8 @@ export function TournamentSite() {
       storedPlayer &&
       data.players.some((player) => player.id === storedPlayer)
     ) {
+      // Restore the player's prior selection from this device.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelectedPlayer(storedPlayer);
     }
   }, [data.players, selectedPlayer]);
@@ -186,6 +205,15 @@ export function TournamentSite() {
     () => data.players.find((player) => player.id === selectedPlayer)?.name,
     [data.players, selectedPlayer],
   );
+
+  function selectPotluckPlayer(playerId: string) {
+    setSelectedPlayer(playerId);
+    const existing = data.potluck.find(
+      (contribution) => contribution.playerId === playerId,
+    );
+    setPotluckItem(existing?.item ?? "");
+    setPotluckStatus(null);
+  }
 
   async function submitSignup(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -288,6 +316,46 @@ export function TournamentSite() {
     }
   }
 
+  async function submitPotluck(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (potluckPending) return;
+    setPotluckPending(true);
+    setPotluckStatus(null);
+
+    const form = new FormData(event.currentTarget);
+    try {
+      const response = await fetch("/api/potluck", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          playerId: selectedPlayer,
+          item: potluckItem,
+          website: form.get("website"),
+        }),
+      });
+      const payload = (await response.json()) as { error?: string };
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Your potluck item could not be saved.");
+      }
+
+      setPotluckStatus({
+        type: "success",
+        message: `Potluck item saved${selectedPlayerName ? ` for ${selectedPlayerName}` : ""}.`,
+      });
+      await refreshData();
+    } catch (error) {
+      setPotluckStatus({
+        type: "error",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Your potluck item could not be saved.",
+      });
+    } finally {
+      setPotluckPending(false);
+    }
+  }
+
   const totals = data.voteTotals;
   const randomPercent = totals?.total
     ? Math.round((totals.randomPartners / totals.total) * 100)
@@ -324,7 +392,7 @@ export function TournamentSite() {
             className="scrollbar-thin ml-auto flex items-center gap-1 overflow-x-auto"
             aria-label="Primary navigation"
           >
-            {["Home", "Sign Up", "Vote", "Tournament"].map((item) => (
+            {["Home", "Sign Up", "Vote", "Potluck", "Tournament"].map((item) => (
               <a
                 key={item}
                 href={`#${item.toLowerCase().replace(" ", "")}`}
@@ -418,7 +486,7 @@ export function TournamentSite() {
             <Megaphone className="size-4" /> Announcements
           </div>
           <span className="hidden text-[var(--court-blue-dark)] sm:inline">
-            //
+            {"//"}
           </span>
           <p className="text-sm font-semibold">
             {siteConfig.announcements[0]}
@@ -787,11 +855,166 @@ export function TournamentSite() {
       </section>
 
       <section
-        id="tournament"
+        id="potluck"
         className="scroll-mt-20 px-5 py-20 sm:px-8 lg:px-12 lg:py-28"
       >
         <div className="mx-auto max-w-7xl">
-          <SectionHeading eyebrow="Step 03" title="Tournament">
+          <SectionHeading eyebrow="Step 03" title="Potluck lineup">
+            Tell everyone what you plan to bring so we can build a great spread
+            without ending up with twelve bags of chips.
+          </SectionHeading>
+
+          <div className="mt-12 grid gap-7 lg:grid-cols-[minmax(0,0.9fr)_minmax(360px,1.1fr)]">
+            <form
+              onSubmit={submitPotluck}
+              className="paper-grain rounded-[1.6rem] border border-[var(--deep-navy)]/15 bg-white p-6 shadow-[0_18px_55px_rgba(8,42,66,0.09)] sm:p-8"
+            >
+              <div className="mb-7 flex items-center gap-3">
+                <span className="grid size-11 place-items-center rounded-xl bg-[var(--pickle)] text-[var(--deep-navy)] shadow-[3px_3px_0_var(--coral)]">
+                  <UtensilsCrossed className="size-5" />
+                </span>
+                <div>
+                  <h3 className="text-lg font-black text-[var(--deep-navy)]">
+                    Add your contribution
+                  </h3>
+                  <p className="text-sm text-slate-500">
+                    Submitting again updates your existing item.
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-5">
+                <label className="block space-y-2 text-sm font-bold">
+                  <span>Registered player</span>
+                  <Select
+                    value={selectedPlayer}
+                    onValueChange={selectPotluckPlayer}
+                    disabled={!data.configured || !data.players.length}
+                  >
+                    <SelectTrigger className="h-12 w-full rounded-xl bg-white px-4 text-base">
+                      <SelectValue
+                        placeholder={
+                          data.players.length ? "Choose your name" : "Sign up first"
+                        }
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {data.players.map((player) => (
+                        <SelectItem key={player.id} value={player.id}>
+                          {player.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </label>
+
+                <label className="block space-y-2 text-sm font-bold">
+                  <span>What are you bringing?</span>
+                  <Input
+                    value={potluckItem}
+                    onChange={(event) => setPotluckItem(event.target.value)}
+                    required
+                    minLength={2}
+                    maxLength={120}
+                    placeholder="Example: pasta salad and lemonade"
+                    className="h-12 rounded-xl bg-white px-4 text-base"
+                  />
+                </label>
+
+                <label className="sr-only" aria-hidden="true">
+                  Website
+                  <input name="website" tabIndex={-1} autoComplete="off" />
+                </label>
+                {potluckStatus && (
+                  <StatusMessage type={potluckStatus.type}>
+                    {potluckStatus.message}
+                  </StatusMessage>
+                )}
+                {!data.players.length && !loadingData && (
+                  <p className="text-sm text-slate-600">
+                    Add your name to the{" "}
+                    <a
+                      href="#signup"
+                      className="font-black text-[var(--court-blue)] underline underline-offset-4"
+                    >
+                      player list first.
+                    </a>
+                  </p>
+                )}
+                <Button
+                  type="submit"
+                  size="lg"
+                  disabled={
+                    !data.configured ||
+                    !selectedPlayer ||
+                    potluckItem.trim().length < 2 ||
+                    potluckPending
+                  }
+                  className="h-12 w-full rounded-xl bg-[var(--court-blue)] text-base font-black shadow-[4px_4px_0_var(--pickle)] hover:bg-[var(--court-blue-dark)] sm:w-auto"
+                >
+                  {potluckPending ? (
+                    <LoaderCircle className="animate-spin" />
+                  ) : (
+                    <UtensilsCrossed />
+                  )}
+                  {potluckPending ? "Saving…" : "Add to the potluck"}
+                </Button>
+              </div>
+            </form>
+
+            <div className="overflow-hidden rounded-[1.6rem] border border-[var(--deep-navy)]/15 bg-[var(--deep-navy)] text-white shadow-[0_18px_55px_rgba(8,42,66,0.13)]">
+              <div className="flex items-center justify-between border-b border-white/15 px-6 py-5 sm:px-8">
+                <div>
+                  <p className="text-xs font-black uppercase tracking-[0.2em] text-[var(--pickle)]">
+                    On the menu
+                  </p>
+                  <h3 className="mt-1 text-xl font-black">What everyone is bringing</h3>
+                </div>
+                <span className="grid size-11 place-items-center rounded-full bg-white/10 text-lg font-black">
+                  {data.potluck.length}
+                </span>
+              </div>
+
+              <div className="p-4 sm:p-6">
+                {data.potluck.length ? (
+                  <ul className="grid gap-3 sm:grid-cols-2">
+                    {data.potluck.map((contribution) => (
+                      <li
+                        key={contribution.id}
+                        className="rounded-xl border border-white/10 bg-white/[0.07] p-4"
+                      >
+                        <p className="text-xs font-black uppercase tracking-[0.14em] text-[var(--pickle)]">
+                          {contribution.playerName}
+                        </p>
+                        <p className="mt-2 text-sm font-bold leading-6 text-white">
+                          {contribution.item}
+                        </p>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <div className="grid min-h-52 place-items-center rounded-xl border border-dashed border-white/20 px-6 text-center">
+                    <div>
+                      <UtensilsCrossed className="mx-auto mb-3 size-8 text-[var(--pickle)]" />
+                      <p className="font-bold">The potluck list is empty.</p>
+                      <p className="mt-1 text-sm text-white/60">
+                        Be the first to claim what you’re bringing.
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section
+        id="tournament"
+        className="scroll-mt-20 bg-[#e7f4f8] px-5 py-20 sm:px-8 lg:px-12 lg:py-28"
+      >
+        <div className="mx-auto max-w-7xl">
+          <SectionHeading eyebrow="Step 04" title="Tournament">
             Return here for pairings, round-robin standings, and the finals once
             teams and schedules are ready.
           </SectionHeading>

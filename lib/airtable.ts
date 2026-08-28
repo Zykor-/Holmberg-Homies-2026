@@ -30,6 +30,13 @@ export interface MatchFields {
   "Match Type"?: "Round Robin" | "Finals";
 }
 
+export interface PotluckFields {
+  "Contribution ID"?: string;
+  Player?: string;
+  Item?: string;
+  "Updated At"?: string;
+}
+
 type AirtableRecord<T> = {
   id: string;
   createdTime: string;
@@ -42,6 +49,7 @@ type RuntimeEnv = {
   AIRTABLE_PLAYERS_TABLE_ID?: string;
   AIRTABLE_VOTES_TABLE_ID?: string;
   AIRTABLE_MATCHES_TABLE_ID?: string;
+  AIRTABLE_POTLUCK_TABLE_ID?: string;
   AIRTABLE_SHOW_VOTE_TOTALS?: string;
 };
 
@@ -60,6 +68,9 @@ function readRuntimeEnv(): RuntimeEnv {
     AIRTABLE_MATCHES_TABLE_ID:
       workerEnv.AIRTABLE_MATCHES_TABLE_ID ??
       process.env.AIRTABLE_MATCHES_TABLE_ID,
+    AIRTABLE_POTLUCK_TABLE_ID:
+      workerEnv.AIRTABLE_POTLUCK_TABLE_ID ??
+      process.env.AIRTABLE_POTLUCK_TABLE_ID,
     AIRTABLE_SHOW_VOTE_TOTALS:
       workerEnv.AIRTABLE_SHOW_VOTE_TOTALS ??
       process.env.AIRTABLE_SHOW_VOTE_TOTALS,
@@ -73,7 +84,8 @@ export function isAirtableConfigured() {
       config.AIRTABLE_BASE_ID &&
       config.AIRTABLE_PLAYERS_TABLE_ID &&
       config.AIRTABLE_VOTES_TABLE_ID &&
-      config.AIRTABLE_MATCHES_TABLE_ID,
+      config.AIRTABLE_MATCHES_TABLE_ID &&
+      config.AIRTABLE_POTLUCK_TABLE_ID,
   );
 }
 
@@ -88,7 +100,8 @@ function getConfig() {
     !config.AIRTABLE_BASE_ID ||
     !config.AIRTABLE_PLAYERS_TABLE_ID ||
     !config.AIRTABLE_VOTES_TABLE_ID ||
-    !config.AIRTABLE_MATCHES_TABLE_ID
+    !config.AIRTABLE_MATCHES_TABLE_ID ||
+    !config.AIRTABLE_POTLUCK_TABLE_ID
   ) {
     throw new Error("Airtable is not configured");
   }
@@ -99,6 +112,7 @@ function getConfig() {
     playersTableId: config.AIRTABLE_PLAYERS_TABLE_ID,
     votesTableId: config.AIRTABLE_VOTES_TABLE_ID,
     matchesTableId: config.AIRTABLE_MATCHES_TABLE_ID,
+    potluckTableId: config.AIRTABLE_POTLUCK_TABLE_ID,
   };
 }
 
@@ -162,6 +176,10 @@ export function listMatches() {
   return listAllRecords<MatchFields>(getConfig().matchesTableId);
 }
 
+export function listPotluck() {
+  return listAllRecords<PotluckFields>(getConfig().potluckTableId);
+}
+
 export async function createPlayer(fields: PlayerFields) {
   const response = await airtableFetch<{
     records: AirtableRecord<PlayerFields>[];
@@ -178,6 +196,32 @@ export async function createVote(fields: VoteFields) {
   }>(getConfig().votesTableId, undefined, {
     method: "POST",
     body: JSON.stringify({ records: [{ fields }], typecast: true }),
+  });
+  return response.records[0];
+}
+
+export async function createPotluck(fields: PotluckFields) {
+  const response = await airtableFetch<{
+    records: AirtableRecord<PotluckFields>[];
+  }>(getConfig().potluckTableId, undefined, {
+    method: "POST",
+    body: JSON.stringify({ records: [{ fields }], typecast: true }),
+  });
+  return response.records[0];
+}
+
+export async function updatePotluck(
+  recordId: string,
+  fields: PotluckFields,
+) {
+  const response = await airtableFetch<{
+    records: AirtableRecord<PotluckFields>[];
+  }>(getConfig().potluckTableId, undefined, {
+    method: "PATCH",
+    body: JSON.stringify({
+      records: [{ id: recordId, fields }],
+      typecast: true,
+    }),
   });
   return response.records[0];
 }
