@@ -6,6 +6,7 @@ import {
   CalendarDays,
   CheckCircle2,
   Clock3,
+  ExternalLink,
   LoaderCircle,
   MapPin,
   Megaphone,
@@ -476,6 +477,31 @@ export function TournamentSite() {
                 <a href="#tournament">Tournament</a>
               </Button>
             </div>
+
+            <a
+              href="https://www.guildeddragon.com/"
+              target="_blank"
+              rel="noreferrer"
+              className="mt-7 inline-flex max-w-full items-center gap-3 rounded-2xl border border-white/20 bg-white/10 p-2 pr-4 text-white backdrop-blur transition hover:border-[var(--pickle)]/70 hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--pickle)]"
+              aria-label="Visit tournament sponsor The Guilded Dragon"
+            >
+              <span className="grid size-14 shrink-0 place-items-center overflow-hidden rounded-xl bg-white p-1 shadow-sm">
+                <img
+                  src="/guilded-dragon-logo.png"
+                  alt="The Guilded Dragon logo"
+                  className="size-full object-contain"
+                />
+              </span>
+              <span className="min-w-0">
+                <span className="block text-[0.65rem] font-black uppercase tracking-[0.18em] text-[var(--pickle)]">
+                  Proudly sponsored by
+                </span>
+                <span className="mt-0.5 flex items-center gap-1.5 text-sm font-black sm:text-base">
+                  The Guilded Dragon
+                  <ExternalLink className="size-3.5 shrink-0" />
+                </span>
+              </span>
+            </a>
           </div>
         </div>
       </section>
