@@ -3,8 +3,6 @@ import {
   listMatches,
   listPlayers,
   listPotluck,
-  listVotes,
-  shouldShowVoteTotals,
 } from "@/lib/airtable";
 
 export const dynamic = "force-dynamic";
@@ -27,8 +25,6 @@ export async function GET() {
       {
         configured: false,
         players: [],
-        showVoteTotals: false,
-        voteTotals: null,
         standings: [],
         finals: [],
         potluck: [],
@@ -38,13 +34,11 @@ export async function GET() {
   }
 
   try {
-    const [playerRecords, voteRecords, matchRecords, potluckRecords] =
-      await Promise.all([
-        listPlayers(),
-        listVotes(),
-        listMatches(),
-        listPotluck(),
-      ]);
+    const [playerRecords, matchRecords, potluckRecords] = await Promise.all([
+      listPlayers(),
+      listMatches(),
+      listPotluck(),
+    ]);
 
     const players = playerRecords
       .filter(
@@ -56,22 +50,6 @@ export async function GET() {
         name: fields.Name as string,
       }))
       .sort((a, b) => a.name.localeCompare(b.name));
-
-    const voteTotals = voteRecords.reduce(
-      (totals, { fields }) => {
-        if (fields["Partner Format Vote"] === "Random Partners") {
-          totals.randomPartners += 1;
-          totals.total += 1;
-        } else if (
-          fields["Partner Format Vote"] === "Choose Your Partners"
-        ) {
-          totals.chooseYourPartners += 1;
-          totals.total += 1;
-        }
-        return totals;
-      },
-      { randomPartners: 0, chooseYourPartners: 0, total: 0 },
-    );
 
     const standingsByName = new Map<string, Standing>();
     const ensureStanding = (name: string) => {
@@ -154,7 +132,6 @@ export async function GET() {
       }))
       .filter((match) => match.team1 || match.team2);
 
-    const showVoteTotals = shouldShowVoteTotals();
     const playerNames = new Map(
       players.map((player) => [player.id, player.name]),
     );
@@ -179,8 +156,6 @@ export async function GET() {
       {
         configured: true,
         players,
-        showVoteTotals,
-        voteTotals: showVoteTotals ? voteTotals : null,
         standings,
         finals,
         potluck,

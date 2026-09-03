@@ -1,22 +1,11 @@
 import { env } from "cloudflare:workers";
 
-export type PartnerFormatVote =
-  | "Random Partners"
-  | "Choose Your Partners";
-
 export interface PlayerFields {
   "Player ID"?: string;
   Name?: string;
   Contact?: string;
   "Registration Date"?: string;
   Active?: boolean;
-}
-
-export interface VoteFields {
-  "Vote ID"?: string;
-  Player?: string;
-  "Partner Format Vote"?: PartnerFormatVote;
-  "Vote Date"?: string;
 }
 
 export interface MatchFields {
@@ -47,10 +36,8 @@ type RuntimeEnv = {
   AIRTABLE_TOKEN?: string;
   AIRTABLE_BASE_ID?: string;
   AIRTABLE_PLAYERS_TABLE_ID?: string;
-  AIRTABLE_VOTES_TABLE_ID?: string;
   AIRTABLE_MATCHES_TABLE_ID?: string;
   AIRTABLE_POTLUCK_TABLE_ID?: string;
-  AIRTABLE_SHOW_VOTE_TOTALS?: string;
 };
 
 function readRuntimeEnv(): RuntimeEnv {
@@ -62,35 +49,24 @@ function readRuntimeEnv(): RuntimeEnv {
     AIRTABLE_PLAYERS_TABLE_ID:
       workerEnv.AIRTABLE_PLAYERS_TABLE_ID ??
       process.env.AIRTABLE_PLAYERS_TABLE_ID,
-    AIRTABLE_VOTES_TABLE_ID:
-      workerEnv.AIRTABLE_VOTES_TABLE_ID ??
-      process.env.AIRTABLE_VOTES_TABLE_ID,
     AIRTABLE_MATCHES_TABLE_ID:
       workerEnv.AIRTABLE_MATCHES_TABLE_ID ??
       process.env.AIRTABLE_MATCHES_TABLE_ID,
     AIRTABLE_POTLUCK_TABLE_ID:
       workerEnv.AIRTABLE_POTLUCK_TABLE_ID ??
       process.env.AIRTABLE_POTLUCK_TABLE_ID,
-    AIRTABLE_SHOW_VOTE_TOTALS:
-      workerEnv.AIRTABLE_SHOW_VOTE_TOTALS ??
-      process.env.AIRTABLE_SHOW_VOTE_TOTALS,
   };
 }
 
 export function isAirtableConfigured() {
   const config = readRuntimeEnv();
   return Boolean(
-    config.AIRTABLE_TOKEN &&
+      config.AIRTABLE_TOKEN &&
       config.AIRTABLE_BASE_ID &&
       config.AIRTABLE_PLAYERS_TABLE_ID &&
-      config.AIRTABLE_VOTES_TABLE_ID &&
       config.AIRTABLE_MATCHES_TABLE_ID &&
       config.AIRTABLE_POTLUCK_TABLE_ID,
   );
-}
-
-export function shouldShowVoteTotals() {
-  return readRuntimeEnv().AIRTABLE_SHOW_VOTE_TOTALS?.toLowerCase() === "true";
 }
 
 function getConfig() {
@@ -99,7 +75,6 @@ function getConfig() {
     !config.AIRTABLE_TOKEN ||
     !config.AIRTABLE_BASE_ID ||
     !config.AIRTABLE_PLAYERS_TABLE_ID ||
-    !config.AIRTABLE_VOTES_TABLE_ID ||
     !config.AIRTABLE_MATCHES_TABLE_ID ||
     !config.AIRTABLE_POTLUCK_TABLE_ID
   ) {
@@ -110,7 +85,6 @@ function getConfig() {
     token: config.AIRTABLE_TOKEN,
     baseId: config.AIRTABLE_BASE_ID,
     playersTableId: config.AIRTABLE_PLAYERS_TABLE_ID,
-    votesTableId: config.AIRTABLE_VOTES_TABLE_ID,
     matchesTableId: config.AIRTABLE_MATCHES_TABLE_ID,
     potluckTableId: config.AIRTABLE_POTLUCK_TABLE_ID,
   };
@@ -168,10 +142,6 @@ export function listPlayers() {
   return listAllRecords<PlayerFields>(getConfig().playersTableId);
 }
 
-export function listVotes() {
-  return listAllRecords<VoteFields>(getConfig().votesTableId);
-}
-
 export function listMatches() {
   return listAllRecords<MatchFields>(getConfig().matchesTableId);
 }
@@ -184,16 +154,6 @@ export async function createPlayer(fields: PlayerFields) {
   const response = await airtableFetch<{
     records: AirtableRecord<PlayerFields>[];
   }>(getConfig().playersTableId, undefined, {
-    method: "POST",
-    body: JSON.stringify({ records: [{ fields }], typecast: true }),
-  });
-  return response.records[0];
-}
-
-export async function createVote(fields: VoteFields) {
-  const response = await airtableFetch<{
-    records: AirtableRecord<VoteFields>[];
-  }>(getConfig().votesTableId, undefined, {
     method: "POST",
     body: JSON.stringify({ records: [{ fields }], typecast: true }),
   });

@@ -11,15 +11,14 @@ import {
   MapPin,
   Megaphone,
   RefreshCw,
+  Shirt,
   Trophy,
   UtensilsCrossed,
   Users,
-  Vote,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Select,
   SelectContent,
@@ -38,11 +37,6 @@ import {
 import { siteConfig } from "@/lib/site-config";
 
 type Player = { id: string; name: string };
-type VoteTotals = {
-  randomPartners: number;
-  chooseYourPartners: number;
-  total: number;
-};
 type Standing = {
   name: string;
   played: number;
@@ -53,13 +47,8 @@ type Standing = {
   differential: number;
 };
 type FinalsMatch = {
-  id: string;
-  round: string;
   team1: string | null;
   team2: string | null;
-  team1Score: number | null;
-  team2Score: number | null;
-  completed: boolean;
 };
 type PotluckContribution = {
   id: string;
@@ -70,8 +59,6 @@ type PotluckContribution = {
 type SiteData = {
   configured: boolean;
   players: Player[];
-  showVoteTotals: boolean;
-  voteTotals: VoteTotals | null;
   standings: Standing[];
   finals: FinalsMatch[];
   potluck: PotluckContribution[];
@@ -80,8 +67,6 @@ type SiteData = {
 const emptyData: SiteData = {
   configured: true,
   players: [],
-  showVoteTotals: false,
-  voteTotals: null,
   standings: [],
   finals: [],
   potluck: [],
@@ -146,12 +131,6 @@ export function TournamentSite() {
   } | null>(null);
   const [signupPending, setSignupPending] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState("");
-  const [partnerVote, setPartnerVote] = useState("");
-  const [voteStatus, setVoteStatus] = useState<{
-    type: "success" | "error";
-    message: string;
-  } | null>(null);
-  const [votePending, setVotePending] = useState(false);
   const [potluckItem, setPotluckItem] = useState("");
   const [potluckStatus, setPotluckStatus] = useState<{
     type: "success" | "error";
@@ -260,8 +239,7 @@ export function TournamentSite() {
       setContact("");
       setSignupStatus({
         type: "success",
-        message:
-          "You’re registered! Your name is ready on the voting form below.",
+        message: "You’re registered! Your name is on the player list.",
       });
       await refreshData();
     } catch (error) {
@@ -274,46 +252,6 @@ export function TournamentSite() {
       });
     } finally {
       setSignupPending(false);
-    }
-  }
-
-  async function submitVote(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (votePending) return;
-    setVotePending(true);
-    setVoteStatus(null);
-
-    const form = new FormData(event.currentTarget);
-    try {
-      const response = await fetch("/api/vote", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          playerId: selectedPlayer,
-          vote: partnerVote,
-          website: form.get("website"),
-        }),
-      });
-      const payload = (await response.json()) as { error?: string };
-      if (!response.ok) {
-        throw new Error(payload.error ?? "Your vote could not be saved.");
-      }
-
-      setVoteStatus({
-        type: "success",
-        message: `Vote saved${selectedPlayerName ? ` for ${selectedPlayerName}` : ""}. Thanks!`,
-      });
-      await refreshData();
-    } catch (error) {
-      setVoteStatus({
-        type: "error",
-        message:
-          error instanceof Error
-            ? error.message
-            : "Your vote could not be saved.",
-      });
-    } finally {
-      setVotePending(false);
     }
   }
 
@@ -357,21 +295,16 @@ export function TournamentSite() {
     }
   }
 
-  const totals = data.voteTotals;
-  const randomPercent = totals?.total
-    ? Math.round((totals.randomPartners / totals.total) * 100)
-    : 0;
-  const choosePercent = totals?.total
-    ? Math.round((totals.chooseYourPartners / totals.total) * 100)
-    : 0;
+  const championshipMatch = data.finals[0];
 
-  const finalsByRound = data.finals.reduce<Record<string, FinalsMatch[]>>(
-    (groups, match) => {
-      (groups[match.round] ??= []).push(match);
-      return groups;
-    },
-    {},
-  );
+  const navItems = [
+    { label: "Home", href: "#home" },
+    { label: "Sign Up", href: "#signup" },
+    { label: "Format", href: "#format" },
+    { label: "Tournament", href: "#tournament" },
+    { label: "Potluck", href: "#potluck" },
+    { label: "T-Shirts", href: "#tshirts" },
+  ];
 
   return (
     <main className="min-h-screen overflow-x-hidden">
@@ -393,13 +326,13 @@ export function TournamentSite() {
             className="scrollbar-thin ml-auto flex items-center gap-1 overflow-x-auto"
             aria-label="Primary navigation"
           >
-            {["Home", "Sign Up", "Vote", "Potluck", "Tournament"].map((item) => (
+            {navItems.map((item) => (
               <a
-                key={item}
-                href={`#${item.toLowerCase().replace(" ", "")}`}
+                key={item.href}
+                href={item.href}
                 className="rounded-lg px-3 py-2 text-xs font-bold uppercase tracking-wider text-white/75 transition hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--pickle)] sm:text-sm"
               >
-                {item}
+                {item.label}
               </a>
             ))}
           </nav>
@@ -466,7 +399,7 @@ export function TournamentSite() {
                 variant="outline"
                 className="h-12 rounded-xl border-white/45 bg-white/10 px-6 font-black text-white hover:bg-white hover:text-[var(--deep-navy)]"
               >
-                <a href="#vote">Vote</a>
+                <a href="#format">See the Format</a>
               </Button>
               <Button
                 asChild
@@ -678,204 +611,267 @@ export function TournamentSite() {
       </section>
 
       <section
-        id="vote"
+        id="format"
         className="scroll-mt-20 bg-[#e7f4f8] px-5 py-20 sm:px-8 lg:px-12 lg:py-28"
       >
         <div className="mx-auto max-w-7xl">
-          <SectionHeading eyebrow="Step 02" title="Choose the format">
-            Registered players can vote once on how partners should be formed.
-            The result does not lock in a team format until voting is finished.
+          <SectionHeading eyebrow="Step 02" title="Cream of the Crop">
+            Qualifying uses rotating partners, with every player competing for
+            an individual place in the standings.
           </SectionHeading>
 
-          <div className="mt-12 grid gap-7 lg:grid-cols-[minmax(0,1.15fr)_minmax(300px,0.85fr)]">
-            <form
-              onSubmit={submitVote}
-              className="rounded-[1.6rem] border border-[var(--deep-navy)]/15 bg-white p-6 shadow-[0_18px_55px_rgba(8,42,66,0.08)] sm:p-8"
-            >
-              <div className="mb-6 flex items-center gap-3">
-                <span className="grid size-11 place-items-center rounded-xl bg-[var(--coral)] text-[var(--deep-navy)]">
-                  <Vote className="size-5" />
-                </span>
-                <div>
-                  <h3 className="text-lg font-black">Partner format vote</h3>
-                  <p className="text-sm text-slate-500">
-                    Select your registered name first.
+          <div className="mt-12 grid gap-7 lg:grid-cols-[minmax(0,1.08fr)_minmax(320px,0.92fr)]">
+            <div className="rounded-[1.6rem] border border-[var(--deep-navy)]/15 bg-white p-6 shadow-[0_18px_55px_rgba(8,42,66,0.08)] sm:p-8">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <article className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                  <span className="grid size-10 place-items-center rounded-xl bg-[var(--court-blue)] text-white">
+                    <RefreshCw className="size-5" />
+                  </span>
+                  <h3 className="mt-5 text-lg font-black text-[var(--deep-navy)]">
+                    Rotating partners
+                  </h3>
+                  <p className="mt-2 text-sm leading-6 text-slate-600">
+                    Partners change during qualifying. Your results stay with
+                    you, regardless of who is beside you.
                   </p>
-                </div>
+                </article>
+                <article className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                  <span className="grid size-10 place-items-center rounded-xl bg-[var(--pickle)] text-[var(--deep-navy)]">
+                    <Users className="size-5" />
+                  </span>
+                  <h3 className="mt-5 text-lg font-black text-[var(--deep-navy)]">
+                    Individual standings
+                  </h3>
+                  <p className="mt-2 text-sm leading-6 text-slate-600">
+                    Players are ranked by wins. Point differential breaks any
+                    ties in the standings.
+                  </p>
+                </article>
               </div>
 
-              <div className="space-y-6">
-                <label className="block space-y-2 text-sm font-bold">
-                  <span>Registered player</span>
-                  <Select
-                    value={selectedPlayer}
-                    onValueChange={setSelectedPlayer}
-                    disabled={!data.configured || !data.players.length}
-                  >
-                    <SelectTrigger className="h-12 w-full rounded-xl bg-white px-4 text-base">
-                      <SelectValue
-                        placeholder={
-                          data.players.length ? "Choose your name" : "Sign up first"
-                        }
-                      />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {data.players.map((player) => (
-                        <SelectItem key={player.id} value={player.id}>
-                          {player.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </label>
-
-                <fieldset>
-                  <legend className="mb-3 text-sm font-bold">
-                    How should partners be formed?
-                  </legend>
-                  <RadioGroup
-                    value={partnerVote}
-                    onValueChange={setPartnerVote}
-                    className="grid gap-3 sm:grid-cols-2"
-                  >
-                    <label
-                      className={`cursor-pointer rounded-2xl border-2 p-5 transition ${
-                        partnerVote === "Random Partners"
-                          ? "border-[var(--court-blue)] bg-blue-50 shadow-[4px_4px_0_var(--pickle)]"
-                          : "border-slate-200 hover:border-[var(--court-blue)]/50"
-                      }`}
-                    >
-                      <span className="flex items-start gap-3">
-                        <RadioGroupItem
-                          value="Random Partners"
-                          className="mt-1"
-                        />
-                        <span>
-                          <span className="block font-black text-[var(--deep-navy)]">
-                            Random Partners
-                          </span>
-                          <span className="mt-1 block text-sm leading-6 text-slate-600">
-                            Partners would be drawn after voting closes.
-                          </span>
-                        </span>
-                      </span>
-                    </label>
-                    <label
-                      className={`cursor-pointer rounded-2xl border-2 p-5 transition ${
-                        partnerVote === "Choose Your Partners"
-                          ? "border-[var(--coral)] bg-orange-50 shadow-[4px_4px_0_var(--pickle)]"
-                          : "border-slate-200 hover:border-[var(--coral)]/60"
-                      }`}
-                    >
-                      <span className="flex items-start gap-3">
-                        <RadioGroupItem
-                          value="Choose Your Partners"
-                          className="mt-1"
-                        />
-                        <span>
-                          <span className="block font-black text-[var(--deep-navy)]">
-                            Choose Your Partners
-                          </span>
-                          <span className="mt-1 block text-sm leading-6 text-slate-600">
-                            Partner selection can be added if this format wins.
-                          </span>
-                        </span>
-                      </span>
-                    </label>
-                  </RadioGroup>
-                </fieldset>
-
-                <label className="sr-only" aria-hidden="true">
-                  Website
-                  <input name="website" tabIndex={-1} autoComplete="off" />
-                </label>
-                {voteStatus && (
-                  <StatusMessage type={voteStatus.type}>
-                    {voteStatus.message}
-                  </StatusMessage>
-                )}
-                {!data.players.length && !loadingData && (
-                  <p className="text-sm text-slate-600">
-                    Need a name on the list?{" "}
-                    <a
-                      href="#signup"
-                      className="font-black text-[var(--court-blue)] underline underline-offset-4"
-                    >
-                      Sign up above.
-                    </a>
-                  </p>
-                )}
-                <Button
-                  type="submit"
-                  size="lg"
-                  disabled={
-                    !data.configured ||
-                    !selectedPlayer ||
-                    !partnerVote ||
-                    votePending
-                  }
-                  className="h-12 w-full rounded-xl bg-[var(--deep-navy)] text-base font-black shadow-[4px_4px_0_var(--pickle)] hover:bg-[var(--court-blue-dark)] sm:w-auto"
-                >
-                  {votePending ? (
-                    <LoaderCircle className="animate-spin" />
-                  ) : (
-                    <Vote />
-                  )}
-                  {votePending ? "Saving vote…" : "Submit vote"}
-                </Button>
+              <div className="mt-5 rounded-2xl border-l-4 border-[var(--coral)] bg-orange-50 px-5 py-4">
+                <p className="font-black text-[var(--deep-navy)]">
+                  You do not need a permanent partner.
+                </p>
+                <p className="mt-1 text-sm leading-6 text-slate-600">
+                  Just show up ready to play.
+                </p>
               </div>
-            </form>
+            </div>
 
-            <div className="rounded-[1.6rem] border border-[var(--deep-navy)]/15 bg-[var(--deep-navy)] p-6 text-white shadow-[0_18px_55px_rgba(8,42,66,0.13)] sm:p-8">
-              <p className="text-xs font-black uppercase tracking-[0.2em] text-[var(--pickle)]">
-                Vote status
+            <aside className="rounded-[1.6rem] border border-[var(--deep-navy)]/15 bg-[var(--deep-navy)] p-6 text-white shadow-[0_18px_55px_rgba(8,42,66,0.13)] sm:p-8">
+              <p className="text-xs font-black uppercase tracking-[0.2em] text-[var(--coral)]">
+                Championship path
               </p>
-              <h3 className="mt-2 text-2xl font-black">Live totals</h3>
-              {data.showVoteTotals && totals ? (
-                <div className="mt-8 space-y-7">
-                  <div>
-                    <div className="mb-2 flex justify-between gap-4 text-sm font-bold">
-                      <span>Random Partners</span>
-                      <span>
-                        {totals.randomPartners} · {randomPercent}%
-                      </span>
-                    </div>
-                    <div className="h-3 overflow-hidden rounded-full bg-white/15">
-                      <div
-                        className="h-full rounded-full bg-[var(--pickle)]"
-                        style={{ width: `${randomPercent}%` }}
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <div className="mb-2 flex justify-between gap-4 text-sm font-bold">
-                      <span>Choose Your Partners</span>
-                      <span>
-                        {totals.chooseYourPartners} · {choosePercent}%
-                      </span>
-                    </div>
-                    <div className="h-3 overflow-hidden rounded-full bg-white/15">
-                      <div
-                        className="h-full rounded-full bg-[var(--coral)]"
-                        style={{ width: `${choosePercent}%` }}
-                      />
-                    </div>
-                  </div>
-                  <p className="border-t border-white/15 pt-5 text-sm text-white/65">
-                    {totals.total} vote{totals.total === 1 ? "" : "s"} recorded.
+              <h3 className="mt-2 text-2xl font-black">
+                The top four advance
+              </h3>
+              <p className="mt-3 text-sm leading-6 text-white/70">
+                After qualifying, the four highest-ranked players form two
+                teams for the championship.
+              </p>
+
+              <div className="mt-8 grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+                <div className="rounded-2xl bg-white/[0.08] px-3 py-5 text-center">
+                  <p className="display-face text-3xl text-[var(--pickle)]">
+                    #1 + #4
                   </p>
                 </div>
+                <span className="display-face text-xl text-[var(--coral)]">
+                  VS
+                </span>
+                <div className="rounded-2xl bg-white/[0.08] px-3 py-5 text-center">
+                  <p className="display-face text-3xl text-[var(--pickle)]">
+                    #2 + #3
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-5 rounded-xl border border-white/15 bg-white/[0.06] px-4 py-3 text-center text-sm font-black uppercase tracking-[0.16em]">
+                Best of 3 final
+              </div>
+            </aside>
+          </div>
+        </div>
+      </section>
+
+      <section
+        id="tournament"
+        className="scroll-mt-20 px-5 py-20 sm:px-8 lg:px-12 lg:py-28"
+      >
+        <div className="mx-auto max-w-7xl">
+          <SectionHeading eyebrow="Step 03" title="Standings + Championship">
+            Follow the individual qualifying leaderboard and the championship
+            matchup here on tournament day.
+          </SectionHeading>
+
+          <div className="mt-12 overflow-hidden rounded-[1.6rem] border border-[var(--deep-navy)]/15 bg-white shadow-[0_18px_55px_rgba(8,42,66,0.08)]">
+            <div className="flex flex-col gap-3 border-b bg-[var(--court-blue)] px-6 py-5 text-white sm:flex-row sm:items-center sm:justify-between sm:px-8">
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.2em] text-[var(--pickle)]">
+                  Qualifying
+                </p>
+                <h3 className="mt-1 text-2xl font-black">
+                  Individual standings
+                </h3>
+              </div>
+              <p className="text-sm text-white/80">
+                Ranked by wins, then point differential.
+              </p>
+            </div>
+
+            <div className="divide-y divide-slate-200 md:hidden">
+              {data.standings.length ? (
+                data.standings.map((standing, index) => (
+                  <article
+                    key={standing.name}
+                    className={`p-5 ${index < 4 ? "bg-[var(--pickle)]/[0.09]" : "bg-white"}`}
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex min-w-0 items-center gap-3">
+                        <span className="grid size-9 shrink-0 place-items-center rounded-full bg-[var(--deep-navy)] text-sm font-black text-[var(--pickle)]">
+                          {index + 1}
+                        </span>
+                        <p className="truncate font-black text-[var(--deep-navy)]">
+                          {standing.name}
+                        </p>
+                      </div>
+                      {index < 4 && (
+                        <span className="shrink-0 rounded-full bg-[var(--pickle)] px-2.5 py-1 text-[0.65rem] font-black uppercase tracking-wider text-[var(--deep-navy)]">
+                          Top 4
+                        </span>
+                      )}
+                    </div>
+                    <dl className="mt-4 grid grid-cols-5 gap-2 text-center">
+                      {[
+                        ["GP", standing.played],
+                        ["W", standing.wins],
+                        ["PF", standing.pointsFor],
+                        ["PA", standing.pointsAgainst],
+                        ["+/-", `${standing.differential > 0 ? "+" : ""}${standing.differential}`],
+                      ].map(([label, value]) => (
+                        <div key={label} className="rounded-lg bg-slate-100 px-1 py-2">
+                          <dt className="text-[0.65rem] font-black uppercase tracking-wider text-slate-500">
+                            {label}
+                          </dt>
+                          <dd className="mt-1 text-sm font-black text-[var(--deep-navy)]">
+                            {value}
+                          </dd>
+                        </div>
+                      ))}
+                    </dl>
+                  </article>
+                ))
               ) : (
-                <div className="mt-8 rounded-2xl border border-dashed border-white/25 bg-white/[0.07] p-6">
-                  <Vote className="mb-4 size-8 text-[var(--pickle)]" />
-                  <p className="font-black">Totals are currently hidden.</p>
-                  <p className="mt-2 text-sm leading-6 text-white/65">
-                    Votes are still being counted. Visibility can be switched on
-                    later without changing the form.
-                  </p>
-                </div>
+                <p className="px-5 py-14 text-center text-slate-500">
+                  Standings will appear here on tournament day.
+                </p>
               )}
             </div>
+
+            <div className="hidden overflow-x-auto md:block">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-slate-50 hover:bg-slate-50">
+                    <TableHead className="w-16 px-5 text-center">Rank</TableHead>
+                    <TableHead className="min-w-44">Player</TableHead>
+                    <TableHead className="text-center">Games Played</TableHead>
+                    <TableHead className="text-center">Wins</TableHead>
+                    <TableHead className="text-center">Points For</TableHead>
+                    <TableHead className="text-center">Points Against</TableHead>
+                    <TableHead className="pr-5 text-right">
+                      Point Differential
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {data.standings.length ? (
+                    data.standings.map((standing, index) => (
+                      <TableRow
+                        key={standing.name}
+                        className={index < 4 ? "bg-[var(--pickle)]/[0.09]" : ""}
+                      >
+                        <TableCell className="px-5 text-center font-black text-[var(--court-blue)]">
+                          {index + 1}
+                        </TableCell>
+                        <TableCell className="font-black text-[var(--deep-navy)]">
+                          <span className="flex items-center gap-2">
+                            {standing.name}
+                            {index < 4 && (
+                              <span className="rounded-full bg-[var(--pickle)] px-2 py-0.5 text-[0.65rem] font-black uppercase tracking-wider">
+                                Top 4
+                              </span>
+                            )}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-center">{standing.played}</TableCell>
+                        <TableCell className="text-center font-bold text-emerald-700">
+                          {standing.wins}
+                        </TableCell>
+                        <TableCell className="text-center">{standing.pointsFor}</TableCell>
+                        <TableCell className="text-center">{standing.pointsAgainst}</TableCell>
+                        <TableCell className="pr-5 text-right font-black">
+                          {standing.differential > 0 ? "+" : ""}
+                          {standing.differential}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell
+                        colSpan={7}
+                        className="h-36 px-5 text-center text-slate-500"
+                      >
+                        Standings will appear here on tournament day.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+
+          <div className="mt-8 rounded-[1.6rem] border border-[var(--deep-navy)]/15 bg-[var(--deep-navy)] p-6 text-white shadow-[0_18px_55px_rgba(8,42,66,0.13)] sm:p-8">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-3">
+                <span className="grid size-12 place-items-center rounded-xl bg-[var(--pickle)] text-[var(--deep-navy)]">
+                  <Trophy className="size-6" />
+                </span>
+                <div>
+                  <p className="text-xs font-black uppercase tracking-[0.2em] text-[var(--coral)]">
+                    Championship
+                  </p>
+                  <h3 className="mt-1 text-2xl font-black">Final matchup</h3>
+                </div>
+              </div>
+              <span className="self-start rounded-full border border-white/20 bg-white/10 px-4 py-2 text-xs font-black uppercase tracking-[0.16em] text-[var(--pickle)] sm:self-auto">
+                Best of 3
+              </span>
+            </div>
+
+            <div className="mt-8 grid grid-cols-[1fr_auto_1fr] items-stretch gap-3 sm:gap-5">
+              <div className="grid min-h-28 place-items-center rounded-2xl border border-white/15 bg-white/[0.07] px-3 py-5 text-center sm:min-h-36 sm:px-6">
+                <p className="display-face text-2xl leading-tight text-white sm:text-4xl">
+                  {championshipMatch?.team1 ?? "#1 + #4"}
+                </p>
+              </div>
+              <div className="grid place-items-center">
+                <span className="display-face grid size-11 place-items-center rounded-full bg-[var(--coral)] text-sm text-[var(--deep-navy)] sm:size-14 sm:text-lg">
+                  VS
+                </span>
+              </div>
+              <div className="grid min-h-28 place-items-center rounded-2xl border border-white/15 bg-white/[0.07] px-3 py-5 text-center sm:min-h-36 sm:px-6">
+                <p className="display-face text-2xl leading-tight text-white sm:text-4xl">
+                  {championshipMatch?.team2 ?? "#2 + #3"}
+                </p>
+              </div>
+            </div>
+
+            <p className="mt-5 text-center text-sm leading-6 text-white/65">
+              {championshipMatch
+                ? "The championship pairing has been posted."
+                : "The matchup will populate after qualifying is complete."}
+            </p>
           </div>
         </div>
       </section>
@@ -885,7 +881,7 @@ export function TournamentSite() {
         className="scroll-mt-20 px-5 py-20 sm:px-8 lg:px-12 lg:py-28"
       >
         <div className="mx-auto max-w-7xl">
-          <SectionHeading eyebrow="Step 03" title="Potluck lineup">
+          <SectionHeading eyebrow="Step 04" title="Potluck lineup">
             Tell everyone what you plan to bring so we can build a great spread
             without ending up with twelve bags of chips.
           </SectionHeading>
@@ -1036,143 +1032,72 @@ export function TournamentSite() {
       </section>
 
       <section
-        id="tournament"
+        id="tshirts"
         className="scroll-mt-20 bg-[#e7f4f8] px-5 py-20 sm:px-8 lg:px-12 lg:py-28"
       >
         <div className="mx-auto max-w-7xl">
-          <SectionHeading eyebrow="Step 04" title="Tournament">
-            Return here for pairings, round-robin standings, and the finals once
-            teams and schedules are ready.
+          <SectionHeading eyebrow="Step 05" title="Tournament T-Shirts">
+            Custom Holmberg Homies 2026 event shirts will be available to order.
+            The order link and shirt details are coming soon.
           </SectionHeading>
 
-          <div className="mt-12 overflow-hidden rounded-[1.6rem] border border-[var(--deep-navy)]/15 bg-white shadow-[0_18px_55px_rgba(8,42,66,0.08)]">
-            <div className="flex flex-col gap-3 border-b bg-[var(--court-blue)] px-6 py-5 text-white sm:flex-row sm:items-center sm:justify-between sm:px-8">
+          <div className="mt-12 grid overflow-hidden rounded-[1.6rem] border border-[var(--deep-navy)]/15 bg-white shadow-[0_18px_55px_rgba(8,42,66,0.1)] lg:grid-cols-[minmax(320px,0.85fr)_minmax(0,1.15fr)]">
+            <div className="paper-grain grid min-h-80 place-items-center bg-[var(--deep-navy)] p-8 text-center text-white sm:min-h-96">
               <div>
-                <p className="text-xs font-black uppercase tracking-[0.2em] text-[var(--pickle)]">
-                  Round Robin
+                <span className="mx-auto grid size-24 place-items-center rounded-[1.6rem] border border-white/15 bg-white/10 text-[var(--pickle)] shadow-[6px_6px_0_var(--coral)]">
+                  <Shirt className="size-12" />
+                </span>
+                <p className="display-face mt-8 text-4xl leading-none">
+                  Holmberg Homies
                 </p>
-                <h3 className="mt-1 text-2xl font-black">Standings</h3>
+                <p className="display-face mt-1 text-5xl leading-none text-[var(--pickle)]">
+                  2026
+                </p>
+                <span className="mt-6 inline-flex rounded-full border border-white/20 bg-white/10 px-4 py-2 text-xs font-black uppercase tracking-[0.18em] text-white/75">
+                  Shirt artwork coming soon
+                </span>
               </div>
-              <p className="text-sm text-white/75">
-                Sorted by wins, then point differential.
+            </div>
+
+            <div className="flex flex-col justify-center p-6 sm:p-10 lg:p-12">
+              <p className="text-xs font-black uppercase tracking-[0.2em] text-[var(--court-blue)]">
+                Event merch
               </p>
-            </div>
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-slate-50 hover:bg-slate-50">
-                  <TableHead className="w-14 px-5 text-center">#</TableHead>
-                  <TableHead className="min-w-48">Team / Player</TableHead>
-                  <TableHead className="text-center">Played</TableHead>
-                  <TableHead className="text-center">Wins</TableHead>
-                  <TableHead className="text-center">Losses</TableHead>
-                  <TableHead className="pr-5 text-right">
-                    Point Diff.
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data.standings.length ? (
-                  data.standings.map((standing, index) => (
-                    <TableRow key={standing.name}>
-                      <TableCell className="px-5 text-center font-black text-[var(--court-blue)]">
-                        {index + 1}
-                      </TableCell>
-                      <TableCell className="font-black text-[var(--deep-navy)]">
-                        {standing.name}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {standing.played}
-                      </TableCell>
-                      <TableCell className="text-center font-bold text-emerald-700">
-                        {standing.wins}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {standing.losses}
-                      </TableCell>
-                      <TableCell className="pr-5 text-right font-black">
-                        {standing.differential > 0 ? "+" : ""}
-                        {standing.differential}
-                      </TableCell>
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell
-                      colSpan={6}
-                      className="h-36 px-5 text-center text-slate-500"
+              <h3 className="mt-3 text-3xl font-black text-[var(--deep-navy)] sm:text-4xl">
+                Holmberg Homies 2026 Shirts
+              </h3>
+              <p className="mt-5 max-w-xl text-base leading-7 text-slate-600">
+                We’re getting a custom tournament shirt ready. Check back here
+                for the final artwork and the official purchase link.
+              </p>
+
+              <div className="mt-8">
+                {siteConfig.shirtOrderUrl ? (
+                  <Button
+                    asChild
+                    size="lg"
+                    className="h-12 rounded-xl bg-[var(--court-blue)] px-6 text-base font-black shadow-[4px_4px_0_var(--pickle)] hover:bg-[var(--court-blue-dark)]"
+                  >
+                    <a
+                      href={siteConfig.shirtOrderUrl}
+                      target="_blank"
+                      rel="noreferrer"
                     >
-                      Standings will appear after completed round-robin matches
-                      are entered.
-                    </TableCell>
-                  </TableRow>
+                      Order Shirts <ExternalLink />
+                    </a>
+                  </Button>
+                ) : (
+                  <Button
+                    type="button"
+                    size="lg"
+                    disabled
+                    className="h-12 w-full rounded-xl bg-slate-200 px-6 text-base font-black text-slate-500 sm:w-auto"
+                  >
+                    <Shirt /> Order Link Coming Soon
+                  </Button>
                 )}
-              </TableBody>
-            </Table>
-          </div>
-
-          <div className="mt-8 rounded-[1.6rem] border border-[var(--deep-navy)]/15 bg-[var(--deep-navy)] p-6 text-white shadow-[0_18px_55px_rgba(8,42,66,0.13)] sm:p-8">
-            <div className="flex items-center gap-3">
-              <span className="grid size-12 place-items-center rounded-xl bg-[var(--pickle)] text-[var(--deep-navy)]">
-                <Trophy className="size-6" />
-              </span>
-              <div>
-                <p className="text-xs font-black uppercase tracking-[0.2em] text-[var(--coral)]">
-                  Finals
-                </p>
-                <h3 className="mt-1 text-2xl font-black">Playoff bracket</h3>
               </div>
             </div>
-
-            {Object.keys(finalsByRound).length ? (
-              <div className="scrollbar-thin mt-8 flex gap-5 overflow-x-auto pb-3">
-                {Object.entries(finalsByRound).map(([round, matches]) => (
-                  <div key={round} className="min-w-64 flex-1">
-                    <p className="mb-3 text-xs font-black uppercase tracking-[0.16em] text-[var(--pickle)]">
-                      {round}
-                    </p>
-                    <div className="space-y-3">
-                      {matches.map((match) => (
-                        <article
-                          key={match.id}
-                          className="overflow-hidden rounded-xl border border-white/15 bg-white/[0.07]"
-                        >
-                          {[
-                            { name: match.team1, score: match.team1Score },
-                            { name: match.team2, score: match.team2Score },
-                          ].map((side, index) => (
-                            <div
-                              key={index}
-                              className="flex min-h-11 items-center justify-between gap-4 border-b border-white/10 px-4 py-2 last:border-0"
-                            >
-                              <span className="text-sm font-bold">
-                                {side.name ?? "TBD"}
-                              </span>
-                              <span className="font-black text-[var(--pickle)]">
-                                {match.completed && side.score !== null
-                                  ? side.score
-                                  : "—"}
-                              </span>
-                            </div>
-                          ))}
-                        </article>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="mt-8 grid min-h-52 place-items-center rounded-2xl border border-dashed border-white/25 bg-white/[0.07] px-6 text-center">
-                <div>
-                  <Trophy className="mx-auto mb-4 size-9 text-[var(--pickle)]" />
-                  <p className="text-xl font-black">
-                    Pairings and schedule coming soon
-                  </p>
-                  <p className="mt-2 text-sm text-white/60">
-                    Finals matches will appear here when they are added.
-                  </p>
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </section>
