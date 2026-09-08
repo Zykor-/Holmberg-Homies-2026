@@ -8,7 +8,7 @@ export const siteConfig = {
   timeLabel: "10:00 AM–6:00 PM",
   description:
     "A friends pickleball tournament and potluck on the blue courts at Holmberg Park. Sign up, see the Cream of the Crop format, claim what you’re bringing, and come back for tournament updates.",
-  shirtOrderUrl: null as string | null,
+  shirtOrderUrl: "https://bigleaguelocker.com/holmberg/shop/home",
   announcements: [
     "Saturday, September 26 · 10:00 AM–6:00 PM at Holmberg Park.",
   ],

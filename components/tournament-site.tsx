@@ -1037,8 +1037,8 @@ export function TournamentSite() {
       >
         <div className="mx-auto max-w-7xl">
           <SectionHeading eyebrow="Step 05" title="Tournament T-Shirts">
-            Custom Holmberg Homies 2026 event shirts will be available to order.
-            The order link and shirt details are coming soon.
+            Holmberg Homies 2026 event shirts are now available to order.
+            Visit our shop to see the designs and available options.
           </SectionHeading>
 
           <div className="mt-12 grid overflow-hidden rounded-[1.6rem] border border-[var(--deep-navy)]/15 bg-white shadow-[0_18px_55px_rgba(8,42,66,0.1)] lg:grid-cols-[minmax(320px,0.85fr)_minmax(0,1.15fr)]">
@@ -1054,7 +1054,7 @@ export function TournamentSite() {
                   2026
                 </p>
                 <span className="mt-6 inline-flex rounded-full border border-white/20 bg-white/10 px-4 py-2 text-xs font-black uppercase tracking-[0.18em] text-white/75">
-                  Shirt artwork coming soon
+                  Now available
                 </span>
               </div>
             </div>
@@ -1067,8 +1067,8 @@ export function TournamentSite() {
                 Holmberg Homies 2026 Shirts
               </h3>
               <p className="mt-5 max-w-xl text-base leading-7 text-slate-600">
-                We’re getting a custom tournament shirt ready. Check back here
-                for the final artwork and the official purchase link.
+                Get your tournament shirt from our Big League Locker shop.
+                Browse the designs, sizes, and prices, then place your order there.
               </p>
 
               <div className="mt-8">
