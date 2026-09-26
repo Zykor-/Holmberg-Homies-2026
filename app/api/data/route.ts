@@ -1,3 +1,4 @@
+import { calculateStandings, parsePlayerIds } from "@/lib/scores";
 import {
   isAirtableConfigured,
   listMatches,
@@ -51,70 +52,16 @@ export async function GET() {
       }))
       .sort((a, b) => a.name.localeCompare(b.name));
 
-    const standingsByName = new Map<string, Standing>();
-    const ensureStanding = (name: string) => {
-      const existing = standingsByName.get(name);
-      if (existing) return existing;
-      const standing: Standing = {
-        name,
-        played: 0,
-        wins: 0,
-        losses: 0,
-        pointsFor: 0,
-        pointsAgainst: 0,
-        differential: 0,
-      };
-      standingsByName.set(name, standing);
-      return standing;
-    };
-
-    for (const { fields } of matchRecords) {
-      if (
-        fields["Match Type"] !== "Round Robin" ||
-        fields.Completed !== true ||
-        !fields["Team 1"] ||
-        !fields["Team 2"] ||
-        typeof fields["Team 1 Score"] !== "number" ||
-        typeof fields["Team 2 Score"] !== "number"
-      ) {
-        continue;
-      }
-
-      const team1 = ensureStanding(fields["Team 1"]);
-      const team2 = ensureStanding(fields["Team 2"]);
-      const score1 = fields["Team 1 Score"];
-      const score2 = fields["Team 2 Score"];
-
-      team1.played += 1;
-      team2.played += 1;
-      team1.pointsFor += score1;
-      team1.pointsAgainst += score2;
-      team2.pointsFor += score2;
-      team2.pointsAgainst += score1;
-
-      if (score1 > score2) {
-        team1.wins += 1;
-        team2.losses += 1;
-      } else if (score2 > score1) {
-        team2.wins += 1;
-        team1.losses += 1;
-      }
-    }
-
-    const standings = [...standingsByName.values()]
-      .map((standing) => ({
-        ...standing,
-        differential: standing.pointsFor - standing.pointsAgainst,
-      }))
-      .sort(
-        (a, b) =>
-          b.wins - a.wins ||
-          b.differential - a.differential ||
-          a.name.localeCompare(b.name),
-      );
+    const games = matchRecords.map(({fields}) => ({
+      id: fields["Match ID"] ?? "", round: fields.Round ?? "", type: fields["Match Type"] ?? "Round Robin",
+      team1: fields["Team 1"] ?? "", team2: fields["Team 2"] ?? "",
+      playerIds1: parsePlayerIds(fields["Team 1 Player IDs"]), playerIds2: parsePlayerIds(fields["Team 2 Player IDs"]),
+      score1: fields["Team 1 Score"] ?? 0, score2: fields["Team 2 Score"] ?? 0, completed: fields.Completed === true,
+    }));
+    const standings = calculateStandings(games, players);
 
     const finals = matchRecords
-      .filter(({ fields }) => fields["Match Type"] === "Finals")
+      .filter(({ fields }) => fields["Match Type"] === "Finals" && fields.Completed === true)
       .map(({ fields }) => ({
         id: fields["Match ID"] ?? crypto.randomUUID(),
         round: fields.Round ?? "Finals",
@@ -157,6 +104,7 @@ export async function GET() {
         configured: true,
         players,
         standings,
+        games,
         finals,
         potluck,
       },

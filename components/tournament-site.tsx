@@ -36,6 +36,9 @@ import {
 } from "@/components/ui/table";
 import { siteConfig } from "@/lib/site-config";
 
+import { ScoreEntry } from "@/components/score-entry";
+import type { ScoreGame } from "@/lib/scores";
+
 type Player = { id: string; name: string };
 type Standing = {
   name: string;
@@ -57,6 +60,7 @@ type PotluckContribution = {
   item: string;
 };
 type SiteData = {
+  games?: ScoreGame[];
   configured: boolean;
   players: Player[];
   standings: Standing[];
@@ -302,6 +306,7 @@ export function TournamentSite() {
     { label: "Sign Up", href: "#signup" },
     { label: "Format", href: "#format" },
     { label: "Tournament", href: "#tournament" },
+    { label: "Scores", href: "#scores" },
     { label: "Potluck", href: "#potluck" },
     { label: "T-Shirts", href: "#tshirts" },
   ];
@@ -700,6 +705,8 @@ export function TournamentSite() {
         className="scroll-mt-20 px-5 py-20 sm:px-8 lg:px-12 lg:py-28"
       >
         <div className="mx-auto max-w-7xl">
+          <ScoreEntry players={data.players} games={data.games ?? []} refresh={refreshData} />
+          <div className="mt-10" />
           <SectionHeading eyebrow="Step 03" title="Standings + Championship">
             Follow the individual qualifying leaderboard and the championship
             matchup here on tournament day.

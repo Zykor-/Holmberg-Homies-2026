@@ -9,6 +9,8 @@ export interface PlayerFields {
 }
 
 export interface MatchFields {
+  "Team 1 Player IDs"?: string;
+  "Team 2 Player IDs"?: string;
   "Match ID"?: string;
   Round?: string;
   "Team 1"?: string;
@@ -188,4 +190,11 @@ export async function updatePotluck(
 
 export function normalizeName(name: string) {
   return name.trim().replace(/\s+/g, " ").toLocaleLowerCase("en-US");
+}
+
+export async function saveMatch(recordId: string | undefined, fields: MatchFields) {
+  return airtableFetch(getConfig().matchesTableId, undefined, {
+    method: "PATCH",
+    body: JSON.stringify(recordId ? {records:[{id:recordId,fields}]} : {performUpsert:{fieldsToMergeOn:["Match ID"]},records:[{fields}]}),
+  });
 }

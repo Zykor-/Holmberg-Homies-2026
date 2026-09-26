@@ -76,3 +76,6 @@ The non-secret Airtable configuration values are already included in `wrangler.j
 Edit `lib/site-config.ts` for the date, time, description, announcement text, and future shirt order URL. Set `shirtOrderUrl` to the official purchase URL when it is ready; the T-shirt button will activate automatically.
 
 The current Matches table intentionally stores team labels as text until the rotating-partner score-entry and pairing workflow is finalized.
+
+## Public score entry
+The Scores section lets visitors record, correct, or void doubles games. Qualifying results count for each of the four player IDs; finals are recorded separately. Matches includes `Team 1 Player IDs` and `Team 2 Player IDs` as JSON arrays in multiline text fields. Game IDs provide retry-safe upserts. Editing is public, as requested; the latest saved correction wins. Voiding preserves the record and removes it from standings.

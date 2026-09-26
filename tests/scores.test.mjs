@@ -1,0 +1,11 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import ts from 'typescript';
+import {readFileSync} from 'node:fs';
+const code=ts.transpile(readFileSync(new URL('../lib/scores.ts',import.meta.url),'utf8'),{module:ts.ModuleKind.ES2022,target:ts.ScriptTarget.ES2022});
+const {calculateStandings,validateScore}=await import('data:text/javascript;base64,'+Buffer.from(code).toString('base64'));
+const players=['a','b','c','d'].map(id=>({id,name:id}));
+const game={id:'game_123',round:'1',type:'Round Robin',playerIds1:['a','b'],playerIds2:['c','d'],score1:11,score2:5,completed:true};
+test('rotating partners get individual wins and differential; finals and void games excluded',()=>{const rows=calculateStandings([game,{...game,playerIds1:['a','c'],playerIds2:['b','d'],score1:7,score2:11},{...game,type:'Finals'},{...game,completed:false}],players);assert.deepEqual(rows.map(r=>[r.name,r.wins,r.differential]),[['b',2,10],['a',1,2],['d',1,-2],['c',0,-10]]);});
+test('corrected score replaces rather than adds result',()=>{assert.equal(calculateStandings([{...game,score1:3,score2:11}],players)[0].name,'c');});
+test('reject duplicate players, ties and invalid scores',()=>{assert.equal(validateScore(game),null);for(const patch of [{playerIds2:['a','d']},{score1:5},{score1:-1},{score1:1.2},{score1:100}])assert.ok(validateScore({...game,...patch}));});
